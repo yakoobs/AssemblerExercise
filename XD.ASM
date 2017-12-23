@@ -1,54 +1,53 @@
 org 100h
 
 start:
-  call intro
-  call wprowadzPierwszaLiczbe
-  call wprowadzDrugaLiczbe
-  call wybierzDzialanie
-  call koniec
+  CALL intro
+  CALL wprowadzPierwszaLiczbe
+  CALL wprowadzDrugaLiczbe
+  CALL wybierzDzialanie
+  CALL koniec
 
 
   ;INFORMACJE POCZATKOWE
   intro:
     MOV DX, introInf
-    call wypiszDX
-  ret
+    CALL wypiszDX
+  RET
 
   ;ZAPYTANIE O PIERWSZY ARGUMENT
   wprowadzPierwszaLiczbe:
     MOV DX, firstArg
-    call wypiszDX
-  ret
+    CALL wypiszDX
+  RET
 
   ;ZAPYTANIE O DRUGI ARGUMENT
   wprowadzDrugaLiczbe:
     MOV DX, secondArg
-    call wypiszDX
-  ret
+    CALL wypiszDX
+  RET
 
   ;WYBOR DZIALANIA (DZIELENIE CZY MNOZENIE)
   wybierzDzialanie:
     MOV DX, opInf
-    call wypiszDX
-  ret
+    CALL wypiszDX
+  RET
 
   ;ZAKONCZ PROGRAM
   koniec:
 		MOV DX, progEnd
-		call wypiszDX
+		CALL wypiszDX
 
 		MOV AX, 4C00H
 		INT 21H
 
-  ;POMOCNICZA METODA DO WYPISYWANIA ZE ZNAKIEM NOWEJ LINII
+  ;POMOCNICZA METODA DO WYPISYWANIA ZE ZNAKIEM NOWEJ LINIIs
   wypiszDX:
     MOV AH, 9
     INT 21H
 
     MOV DX, ent1
     INT 21H
-
-    ret
+  RET
 
 
   firstArg  db  "Wprowadz pierwszy argument:$"
