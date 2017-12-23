@@ -2,8 +2,8 @@ org 100h
 
 start:
   call intro
-  call wprowadzPierwszaliczbe
-  call wprowadzDrugaliczbe
+  call wprowadzPierwszaLiczbe
+  call wprowadzDrugaLiczbe
   call wybierzDzialanie
   call koniec
 
@@ -15,13 +15,13 @@ start:
   ret
 
   ;ZAPYTANIE O PIERWSZY ARGUMENT
-  wprowadzPierwszaliczbe:
+  wprowadzPierwszaLiczbe:
     MOV DX, firstArg
     call wypiszDX
   ret
 
   ;ZAPYTANIE O DRUGI ARGUMENT
-  wprowadzDrugaliczbe:
+  wprowadzDrugaLiczbe:
     MOV DX, secondArg
     call wypiszDX
   ret
@@ -40,6 +40,7 @@ start:
 		MOV AX, 4C00H
 		INT 21H
 
+  ;POMOCNICZA METODA DO WYPISYWANIA ZE ZNAKIEM NOWEJ LINII
   wypiszDX:
     MOV AH, 9
     INT 21H
