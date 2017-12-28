@@ -2,8 +2,7 @@ org 100h
 
 start:
   CALL intro
-  CALL wprowadzPierwszaLiczbe
-  CALL wprowadzDrugaLiczbe
+  CALL input
   CALL wybierzDzialanie
   CALL koniec
 
@@ -14,14 +13,71 @@ start:
     CALL wypiszDX
   RET
 
-  ;ZAPYTANIE O PIERWSZY ARGUMENT
-  wprowadzPierwszaLiczbe:
-    MOV DX, arg1st
+  ;ZAPYTANIE O ARGUMENTY
+  input:
+    XOR AL, AL	;Wyczysc rejestr AL poniewaz prowadzi tu rowniez instrukcja
+        ;obslugujaca wyjatek wprowadzenia blednej liczby (error->clrstack)
+        ;ktora zawiera warosci w AL
+    MOV AH, 9	;Funkcja DOSowa wypisujaca z DX lancuch znakow
+        ;musimy powtorzyc deklaracje AH=9 poniewaz mozemy tu skoczyc
+        ;z etykiety error gdzie w AH jest 1
+
+    MOV DX, ent1	;Enter
+    INT 21H		;Przerwanie DOS
+
+    MOV DX, getnumb	;Do rejestru DX kopiuj lancuch getnumb
     CALL wypiszDX
-    CALL wczytajLiczbe
+
+    MOV CX, 0	;Wartosc 0 do rejestru CX, bedzie on wskazywac na
+      ;ilosc pobranych cyfr przez program
+
+    pushloop:
+      MOV AH, 1	;Funkcja oczekjaca na znak ze standardowego wejscia
+      INT 21H
+
+      CMP AL, 13	;Jesli jest to enter konczymy wpisywanie znakow
+      JE  poploop
+
+      CMP AL, 48	;Sprawdzamy czy wprowadzony znak jest cyfra badajac
+      JL  error	  ;przedzial wartosci dla cyfr w tablicy ASCII
+      CMP AL, 57
+      JG  error
+
+      INC CL 		;Poprawnie pobralismy cyfre wiec zwiekszam licznik cyfr
+      MOV [count],CL	;MOV [zmiennej wartosc rejestru CX (ilosc liczb na stosie)
+      SUB AL, 48	;Uzyskujemy cyfre ze znaku ASCII
+
+      XOR AH, AH	;Zerujemy gorna czesc rejestru AX czyli AH po to aby uzyskac
+                ;w calym rejestrze wartosc naszej cyfry bo obecnie w AH mamy
+                ;wartosc funkcji wywolujacej pobranie znaku tak wiec
+                ;dla pobranej 2 mielibysmy np 1000000010 w AX
+                ;ale uzywajac XOR mamy same zera w AH oraz 000000010 w AL
+      PUSH AX		;Wrzucamy na stos rejestr AX
+      JMP pushloop	;Kolejny krok petli
+
+      poploop:
+    		CMP CL,0	;Porownaj czy stos czysty
+    		JE  choose	;Jesli tak to koniec programu
+    		POP BX		;Zdejmij wartosc z BX (pojedyncza cyfra z wejscia)
+    		MOV CH, CL
+    	_mul:
+    		CMP CH, 1	;Mnozymy (n-1) razy gdzie n to ilosc liczb na stosie
+    		JE  dalej	;Jesli spelniony warunek przejdz do dodania wyniku
+    		MOV AX, 10	;Przenies do AX wartosc 10
+    		MUL BX		;Pomnoz BX razy wartosc AX i wynik do AX
+    		xor dx,dx	;Zerowanie rejestru DX
+    		MOV BX, AX	;Przenies do BX aktualny wynik mnozenia liczby
+    		DEC CH		;Zmniejsz licznik mnozen o 1
+    		JMP _mul	;Przejdz do kolejnego kroku mnozenia
+    	dalej:
+    		ADD [temp] , BX ;Dodaj do zmiennej aktualna wartosc liczby
+    		MOV [count], CL  ;3 2 1 przenos do count aktualna ilosc liczb na stosie
+    		DEC CL		;osiaga wartosc 0 dla 1 na stosie Zmniejsz wartosc licznika stosu o 1
+
+		    JMP poploop	;Przejdz do poczatku etykiety
   RET
 
-  ;ZAPYTANIE O DRUGI ARGUMENT
+
   wprowadzDrugaLiczbe:
     MOV DX, arg2nd
     CALL wypiszDX
@@ -48,89 +104,6 @@ start:
 
     MOV DX, ent1
     INT 21H
-  RET
-
-  ;POMOCNICZA METODA DO WYPISYWANIA ZAWARTOSCI REJESTROW:
-  wypiszRejestry:
-    MOV AH, 9
-    MOV DX, ent1
-    INT 21H
-
-    ;wypisanie AX
-    MOV DX, labelAX
-    INT 21H
-    MOV DX, AX
-    INT 21H
-
-    MOV DX, ent1
-    INT 21H
-  RET
-
-  wczytajLiczbe:
-    XOR AL, AL	;Wyczysc rejestr AL poniewaz prowadzi tu rowniez instrukcja
-        ;obslugujaca wyjatek wprowadzenia blednej liczby (error->clrstack)
-        ;ktora zawiera warosci w AL
-    MOV AH, 9	;Funkcja DOSowa wypisujaca z DX lancuch znak�w
-        ;musimy powtorzyc deklaracje AH=9 poniewaz mozemy tu skoczyc
-        ;z etykiety error gdzie w AH jest 1
-
-    MOV DX, ent1	;Enter
-    INT 21H		;Przerwanie DOS
-
-    MOV DX, getnumb	;Do rejestru DX kopiuj lancuch getnumb
-    INT 21H		;Przerwanie DOS
-
-    MOV DX, ent1	;Enter
-    INT 21H		;Przerwanie DOS
-
-    MOV CX, 0	;Wartosc 0 do rejestru CX, bedzie on wskazywac na
-      ;ilosc pobranych cyfr przez program
-
-    pushloop: ;W petli pobieramy znaki i wrzucamy na stos
-      MOV AH, 1	;Funkcja oczekjaca na znak ze standardowego wejscia
-      INT 21H
-
-      CMP AL, 13	;Jesli jest to enter konczymy wpisywanie znakow
-      JE  poploop	;Przeskocz do etykiety zrzucania cyfr ze stosu
-      CMP AL, 48	;Sprawdzamy czy wprowadzony znak jest cyfra badajac
-      JL  error	;przedzial wartosci dla cyfr w tablicy ASCII
-                ;jesli jest mniejszy to nie jest cyfra
-      CMP AL, 57;Porownaj czy wprowadzony znak jest wartoscia odpowiadajaca cyfrze
-      JG  error	;Jesli wiekszy to wprowadzony znak nie
-                ;jest cyfra i przejdz do etykiety error
-
-      INC CL 		;Poprawnie pobralismy cyfre wiec zwiekszam licznik cyfr
-      MOV [count],CL	;MOV [miennej wartosc rejestru CX (ilosc liczb na stosie)
-      SUB AL, 48	;Uzyskujemy cyfre ze znaku ASCII
-
-      XOR AH, AH	;Zerujemy g�rna czesc rejestru AX czyli AH po to aby uzyskac
-                ;w calym rejestrze wartosc naszej cyfry bo obecnie w AH mamy
-                ;wartosc funkcji wywolujacej pobranie znaku tak wiec
-                ;dla pobranej 2 mielibysmy np 100000002 w AX
-                ;ale uzywajac XOR mamy same zera w AH oraz 00000002 w AL
-      PUSH AX		;Wrzucamy na stos rejestr AX
-      JMP pushloop	;Kolejny krok petli
-
-      poploop:
-    		CMP CL,0	;Porownaj czy stos czysty
-    		JE  choose	;Jesli tak to koniec programu
-    		POP BX		;Zdejmij wartosc z BX (pojedyncza cyfra z wejscia)
-    		MOV CH, CL
-    	_mul:
-    		CMP CH, 1	;Mnozymy (n-1) razy gdzie n to ilosc liczb na stosie
-    		JE  dalej	;Jesli spelniony warunek przejdz do dodania wyniku
-    		MOV AX, 10	;Przenies do AX wartosc 10
-    		MUL BX		;Pomnoz BX razy wartosc AX i wynik do AX
-    		xor dx,dx	;Zerowanie rejestru DX
-    		MOV BX, AX	;Przenies do BX aktualny wynik mnozenia liczby
-    		DEC CH		;Zmniejsz licznik mnozen o 1
-    		JMP _mul	;Przejdz do kolejnego kroku mnozenia
-    	dalej:
-    		ADD [temp] , BX ;Dodaj do zmiennej aktualna wartosc liczby
-    		MOV [count], CL  ;3 2 1 przeno� do count aktualn� ilosc liczb na stosie
-    		DEC CL		;osiaga wartosc 0 dla 1 na stosie Zmniejsz wartosc licznika stosu o 1
-
-		    JMP poploop	;Przejdz do poczatku etykiety
   RET
 
   choose:
@@ -196,7 +169,7 @@ start:
    XOR BX,BX	;Zeruj BX
 
    CMP CX,0	;Porownaj czy wartosc rejestru CX wynosi 0
-   JE  wczytajLiczbe	;Jesli tak to przejdz do ponownego wprowadzania	cyfr
+   JE  input	;Jesli tak to przejdz do ponownego wprowadzania	cyfr
    DEC CX		;Zmniejsz o 1 rejestr CX
 
    JMP clrstack	;Przejdz do kolejnego kroku (tylko gdy JE input nie jest spelnione)
@@ -204,7 +177,7 @@ start:
   getnumb   db  "Podaj liczbe:$"
   askuser	  db  "Czy chcesz powt�rzyc wpisywanie liczby? t - tak, n - nie.$"
   wrong     db  "Podales niepoprawny argument.$"
-  arg1st    db  "Wprowadz pierwszy argument:$"
+  ;arg1st    db  "Wprowadz pierwszy argument:$"
   arg2nd    db  "Wprowadz drugi argument$"
   introInf  db  "Program dzielacy i mnozacy $"
   opInf     db  "Wpisz znak dzialania (* lub \) $"
